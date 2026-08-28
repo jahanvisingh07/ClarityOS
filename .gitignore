@@ -1,0 +1,18 @@
+# Node dependencies & builds
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+.env*.local
+
+# Python cache & virtual environments
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/venv/
+backend/env/
+.pytest_cache/
+
+# System files
+.DS_Store
+Thumbs.db

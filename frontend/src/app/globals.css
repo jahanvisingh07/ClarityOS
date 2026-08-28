@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  /* Editorial Luxury Theme */
+  --color-clarity-bg: #F4F2ED;       /* Soft warm beige/cream */
+  --color-clarity-text: #1C1F26;     /* Deep charcoal/black */
+  --color-clarity-navy: #0B192C;     /* Deep elegant navy */
+  --color-clarity-gold: #C5A880;     /* Soft champagne gold */
+  --color-clarity-surface: #FFFFFF;
+}
+
+/* Optional: Adding a smooth scrolling experience */
+html {
+  scroll-behavior: smooth;
+}
