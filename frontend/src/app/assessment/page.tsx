@@ -318,7 +318,7 @@ export default function AssessmentPage() {
           return acc;
         }, {} as Record<number, string>);
 
-        const response = await fetch('http://127.0.0.1:8000/analyze-quiz', {
+        const response = await fetch('https://clarityos-backend.onrender.com/analyze-quiz', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
