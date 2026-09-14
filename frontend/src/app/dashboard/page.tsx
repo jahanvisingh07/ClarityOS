@@ -297,6 +297,8 @@ export default function DashboardPage() {
     match: 98.5
   };
 
+  const explanation = results?.explanation || "Derived from your 20-question psychometric and technical profile analysis. Your unique combination of problem-solving preferences and career priorities points toward this path.";
+
   const evaluated = results?.evaluated_vectors || [
     { title: "Product Management & UI/UX Design", match: 98.5 },
     { title: "Data Science & Artificial Intelligence", match: 40.0 },
@@ -347,8 +349,8 @@ export default function DashboardPage() {
                 {optimal.match}% Match Alignment
               </div>
 
-              <p className="text-gray-300 text-sm leading-relaxed max-w-xl">
-                Derived from your 20-question psychometric and technical profile analysis. Your unique combination of problem-solving preferences and career priorities points toward this path.
+              <p className="text-gray-300 text-sm leading-relaxed max-w-xl whitespace-pre-wrap">
+                {explanation}
               </p>
 
               <button 
