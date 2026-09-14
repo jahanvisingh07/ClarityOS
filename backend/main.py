@@ -1,7 +1,14 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 app = FastAPI()
 
@@ -1312,9 +1319,18 @@ async def analyze_quiz(payload: QuizPayload):
         reverse=True
     )
 
+    top_careers = [f"{match['title']} ({match['match']}%)" for match in sorted_matches[:3]]
+    prompt = f"A user completed a career assessment. Top 3 matches: {', '.join(top_careers)}. Write a short, encouraging 2-paragraph explanation of why these careers fit well together based on shared skills. Keep it conversational and address the user as 'you'."
+
+    try:
+        explanation = model.generate_content(prompt).text
+    except Exception:
+        explanation = "You show a strong aptitude for these fields. Explore your top match!"
+
     return {
         "status": "success",
         "stream": stream,
         "optimal_vector": sorted_matches[0],
-        "evaluated_vectors": sorted_matches
+        "evaluated_vectors": sorted_matches,
+        "explanation": explanation
     }
