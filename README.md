@@ -1,5 +1,7 @@
 ClarityOS
+
 Live Project: https://clarity-os-delta.vercel.app
+
 Assessment Route: https://clarity-os-delta.vercel.app/assessment
 
 ClarityOS is a full stack AI career assessment platform built to replace static career quizzes with a dynamic mathematical evaluation engine. I built this to solve the problem of generic career advice by combining a rigorous scoring model with natural language generation, giving users personalized and highly accurate insights.
