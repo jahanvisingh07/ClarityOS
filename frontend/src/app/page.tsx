@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const CAREERS = [
   {
@@ -146,16 +147,16 @@ export default function HomePage() {
       <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-[#E5D4C0] via-[#EFE6D5]/80 to-[#EFE6D5] opacity-90"></div>
 
       <nav className="relative z-50 w-full max-w-[1400px] mx-auto px-8 md:px-16 flex justify-between items-center py-8">
-        <a href="/" className="font-serif text-2xl tracking-[0.15em] text-[#0a1118] uppercase font-bold group">
+        <Link href="/" className="font-serif text-2xl tracking-[0.15em] text-[#0a1118] uppercase font-bold group">
           Clarity<span className="italic text-[#C2A878] font-light group-hover:text-[#0a1118] transition-colors">OS</span>
-        </a>
+        </Link>
         <div className="flex items-center gap-8">
-          <a href="/assessment" className="hidden md:block text-[11px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/60 hover:text-[#0a1118] transition-colors">
+          <Link href="/assessment" className="hidden md:block text-[11px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/60 hover:text-[#0a1118] transition-colors">
             Take Assessment
-          </a>
-          <a href="/signup" className="border border-[#0a1118] text-[#0a1118] px-7 py-3 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#0a1118] hover:text-white transition-all duration-300 rounded-sm shadow-sm">
+          </Link>
+          <Link href="/signup" className="border border-[#0a1118] text-[#0a1118] px-7 py-3 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#0a1118] hover:text-white transition-all duration-300 rounded-sm shadow-sm">
             Sign In
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -167,15 +168,15 @@ export default function HomePage() {
           </h1>
           <div className="w-12 h-[2px] bg-[#C2A878]"></div>
           <p className="text-sm md:text-base text-[#0a1118]/70 font-sans tracking-wide max-w-md leading-relaxed">
-            A smart, personalized career guide for every student. Discover your true path and unlock a roadmap tailored to your unique strengths and passions.
+            An exploratory career quiz for students in grades 11-12 and college. Compare paths that may fit your interests; use the results as a starting point, not a final answer.
           </p>
           <div className="pt-4">
-            <a 
+            <Link
               href="/assessment" 
               className="bg-[#C2A878] text-white px-8 py-5 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#a89060] shadow-[0_12px_30px_rgba(194,168,120,0.35)] hover:-translate-y-0.5 transition-all duration-300 inline-block rounded-sm"
             >
-              Uncover Your Direction
-            </a>
+              Explore Career Paths
+            </Link>
           </div>
         </div>
 
@@ -241,7 +242,7 @@ export default function HomePage() {
           <div className="group relative reveal-on-scroll opacity-0 translate-y-12 transition-all duration-1000 ease-out delay-100 bg-[#2B3A4A] text-white p-12 shadow-xl flex flex-col justify-center items-center h-full min-h-[320px] cursor-pointer hover:-translate-y-3 hover:shadow-2xl overflow-hidden rounded-sm text-center">
             <div className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[150%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out skew-x-12 pointer-events-none"></div>
             <p className="font-serif text-lg lg:text-xl italic leading-relaxed text-gray-100 relative z-10">
-              “The only way to do great work is to love what you do. If you haven't found it yet, keep looking. Don't settle.”
+              “The only way to do great work is to love what you do. If you haven&apos;t found it yet, keep looking. Don&apos;t settle.”
             </p>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C2A878] mt-8 relative z-10">
               — Steve Jobs
@@ -320,12 +321,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <a 
+              <Link
                 href="/assessment" 
                 className="bg-[#0a1118] text-white text-center px-8 py-3.5 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#C2A878] transition-colors duration-300 w-full rounded-sm"
               >
                 Are you a match? Take Assessment
-              </a>
+              </Link>
             </div>
           </div>
         </div>

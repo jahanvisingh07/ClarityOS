@@ -1,14 +1,33 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+import { isQuizResults } from '@/lib/quiz';
+
+const QUIZ_RESULTS_KEY = 'clarity_backend_results';
+const QUIZ_STORAGE_ERROR = '__clarity_quiz_storage_error__';
+
+function subscribeToQuizResults(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange);
+  return () => window.removeEventListener('storage', onStoreChange);
+}
+
+function getQuizResultsSnapshot() {
+  try {
+    return window.sessionStorage.getItem(QUIZ_RESULTS_KEY);
+  } catch (error) {
+    console.error('Could not read the saved assessment results.', error);
+    return QUIZ_STORAGE_ERROR;
+  }
+}
 
 interface CareerDetails {
   title: string;
   track: string;
   image: string;
   description: string;
-  salary: string;
-  degree: string;
+  salary?: string;
+  degree?: string;
 }
 
 const CAREERS_DATABASE: Record<string, CareerDetails> = {
@@ -263,19 +282,24 @@ const CAREERS_DATABASE: Record<string, CareerDetails> = {
 };
 
 export default function DashboardPage() {
-  const [results, setResults] = useState<any>(null);
-  const [selectedCareer, setSelectedCareer] = useState<CareerDetails | null>(null);
-
-  useEffect(() => {
-    const data = sessionStorage.getItem('clarity_backend_results');
-    if (data) {
-      try {
-        setResults(JSON.parse(data));
-      } catch (e) {
-        console.error("Failed to parse backend results", e);
-      }
+  const savedResults = useSyncExternalStore(
+    subscribeToQuizResults,
+    getQuizResultsSnapshot,
+    () => null
+  );
+  const results = useMemo(() => {
+    if (!savedResults || savedResults === QUIZ_STORAGE_ERROR) {
+      return null;
     }
-  }, []);
+
+    try {
+      const parsed: unknown = JSON.parse(savedResults);
+      return isQuizResults(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }, [savedResults]);
+  const [selectedCareer, setSelectedCareer] = useState<CareerDetails | null>(null);
 
   const openCareerDetails = (vectorTitle: string) => {
     if (CAREERS_DATABASE[vectorTitle]) {
@@ -283,31 +307,48 @@ export default function DashboardPage() {
     } else {
       setSelectedCareer({
         title: vectorTitle,
-        track: "Evaluated Professional Vector",
+        track: "Career area to explore",
         image: "/girl-reading.jpg",
-        description: "This specialized profile is matched through your psychometric and cognitive matrix responses.",
-        salary: "₹8 - ₹25+ LPA (Benchmark)",
-        degree: "Relevant Bachelor's / Master's Degree in Field"
+        description: "This area appeared from patterns in your answers. Look into the courses, day-to-day work, and training routes before deciding whether it interests you."
       });
     }
   };
 
-  const optimal = results?.optimal_vector || {
-    title: "Product Management & UI/UX Design",
-    match: 98.5
-  };
+  const optimal = results?.optimal_vector ?? null;
+  const explanation = results?.explanation ?? '';
+  const evaluated = results?.evaluated_vectors ?? [];
 
-  const explanation = results?.explanation || "Derived from your 20-question psychometric and technical profile analysis. Your unique combination of problem-solving preferences and career priorities points toward this path.";
+  if (!results) {
+    const storageUnavailable = savedResults === QUIZ_STORAGE_ERROR;
+    const invalidSavedResult = Boolean(savedResults) && !storageUnavailable;
 
-  const evaluated = results?.evaluated_vectors || [
-    { title: "Product Management & UI/UX Design", match: 98.5 },
-    { title: "Data Science & Artificial Intelligence", match: 40.0 },
-    { title: "Cybersecurity & Ethical Hacking", match: 5.0 },
-    { title: "Cloud Architecture & DevOps", match: 5.0 },
-    { title: "Game Development & Interactive Media", match: 5.0 },
-    { title: "Advanced Academic Research & Higher Studies (MS / Ph.D.)", match: 5.0 },
-    { title: "Full-Stack / Core Software Engineering", match: 0.0 }
-  ];
+    return (
+      <main className="min-h-screen bg-[#EFE6D5] flex items-center justify-center px-6 text-[#0a1118]">
+        <section className="max-w-xl bg-white border border-[#E8E2D2] shadow-xl p-8 md:p-12 text-center">
+          <h1 className="font-serif text-3xl mb-4">
+            {storageUnavailable
+              ? 'Your results could not be opened'
+              : invalidSavedResult
+                ? 'Your saved results are incomplete'
+                : 'No assessment results yet'}
+          </h1>
+          <p className="text-sm leading-relaxed text-gray-600 mb-8">
+            {storageUnavailable
+              ? 'This browser could not access the saved results. Please allow session storage and take the assessment again.'
+              : invalidSavedResult
+                ? 'We could not verify these results, so we will not show a recommendation. Please take the assessment again.'
+                : 'Complete the career exploration assessment to see paths that may fit your interests.'}
+          </p>
+          <Link
+            href="/assessment"
+            className="inline-block bg-[#0a1118] text-white px-8 py-4 text-xs font-bold uppercase tracking-[0.2em] hover:bg-[#C2A878] transition-colors"
+          >
+            Start assessment
+          </Link>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen w-full relative bg-[#EFE6D5] text-[#0a1118] selection:bg-[#B89B72] selection:text-white flex flex-col font-sans">
@@ -317,16 +358,16 @@ export default function DashboardPage() {
 
       {/* Global Header */}
       <nav className="relative z-50 w-full max-w-[1400px] mx-auto px-8 md:px-16 flex justify-between items-center py-8">
-        <a href="/" className="font-serif text-2xl tracking-[0.15em] text-[#0a1118] uppercase font-bold group">
+        <Link href="/" className="font-serif text-2xl tracking-[0.15em] text-[#0a1118] uppercase font-bold group">
           Clarity<span className="italic text-[#C2A878] font-light group-hover:text-[#0a1118] transition-colors">OS</span>
-        </a>
+        </Link>
         <div className="flex items-center gap-8">
-          <a href="/assessment" className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/60 hover:text-[#0a1118] transition-colors">
+          <Link href="/assessment" className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/60 hover:text-[#0a1118] transition-colors">
             Retake Assessment
-          </a>
-          <a href="/" className="border border-[#0a1118] text-[#0a1118] px-7 py-3 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#0a1118] hover:text-white transition-all duration-300 rounded-sm shadow-sm">
+          </Link>
+          <Link href="/" className="border border-[#0a1118] text-[#0a1118] px-7 py-3 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-[#0a1118] hover:text-white transition-all duration-300 rounded-sm shadow-sm">
             Exit
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -338,41 +379,51 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-[#2B3A4A] text-white p-10 md:p-14 rounded-sm shadow-2xl relative overflow-hidden">
               <span className="text-[#C2A878] text-[10px] tracking-[0.3em] uppercase font-bold block mb-4">
-                Optimal Career Vector
+                Leading Areas to Explore
               </span>
               
               <h1 className="font-serif text-3xl md:text-5xl leading-tight mb-6">
-                {optimal.title}
+                {optimal?.title ?? 'No single direction stands out yet'}
               </h1>
 
-              <div className="inline-block bg-[#C2A878] text-[#0a1118] px-4 py-1.5 text-xs font-bold tracking-widest uppercase mb-6 rounded-sm">
-                {optimal.match}% Match Alignment
-              </div>
+              {optimal && (
+                <div className="inline-block bg-[#C2A878] text-[#0a1118] px-4 py-1.5 text-xs font-bold tracking-widest uppercase mb-6 rounded-sm">
+                  {optimal.match}% Answer Alignment
+                </div>
+              )}
 
               <p className="text-gray-300 text-sm leading-relaxed max-w-xl whitespace-pre-wrap">
                 {explanation}
               </p>
 
-              <button 
-                onClick={() => openCareerDetails(optimal.title)}
-                className="mt-8 inline-block bg-white text-[#0a1118] px-6 py-3 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#C2A878] hover:text-white transition-all shadow-md cursor-pointer"
-              >
-                View Full Role Profile →
-              </button>
+              <p className="text-gray-300/80 text-xs leading-relaxed max-w-xl mt-5">
+                These scores reflect patterns in your answers. They are for exploration, not a prediction of ability or a guaranteed career choice.
+              </p>
+
+              {optimal && (
+                <button
+                  type="button"
+                  onClick={() => openCareerDetails(optimal.title)}
+                  className="mt-8 inline-block bg-white text-[#0a1118] px-6 py-3 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#C2A878] hover:text-white transition-all shadow-md cursor-pointer"
+                >
+                  View Full Role Profile →
+                </button>
+              )}
             </div>
 
             {/* Evaluated Vectors List */}
             <div className="bg-white p-8 md:p-12 border border-[#E8E2D2] shadow-xl rounded-sm">
               <h2 className="font-serif text-xl tracking-[0.2em] uppercase text-[#0a1118] mb-8">
-                All Evaluated Vectors <span className="text-xs text-gray-400 font-sans tracking-normal">(Click any row to inspect)</span>
+                Paths in Your Study Track <span className="text-xs text-gray-400 font-sans tracking-normal">(Select a path to learn more)</span>
               </h2>
 
               <div className="space-y-4">
-                {evaluated.map((vec: any, idx: number) => (
-                  <div 
-                    key={idx}
+                {evaluated.map((vec, idx) => (
+                  <button
+                    key={vec.title}
+                    type="button"
                     onClick={() => openCareerDetails(vec.title)}
-                    className="p-4 border border-[#E8E2D2] hover:border-[#C2A878] hover:bg-[#FBF8F1] transition-all cursor-pointer group rounded-sm"
+                    className="w-full text-left p-4 border border-[#E8E2D2] hover:border-[#C2A878] hover:bg-[#FBF8F1] transition-all cursor-pointer group rounded-sm"
                   >
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-serif text-base text-[#0a1118] group-hover:text-[#C2A878] transition-colors">
@@ -387,10 +438,10 @@ export default function DashboardPage() {
                     <div className="w-full h-1.5 bg-[#E8E2D2] overflow-hidden rounded-full">
                       <div 
                         className="h-full bg-[#C2A878] transition-all duration-700"
-                        style={{ width: `${Math.max(2, vec.match)}%` }}
+                        style={{ width: `${vec.match}%` }}
                       ></div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -400,25 +451,19 @@ export default function DashboardPage() {
           <div className="space-y-8">
             <div className="bg-white p-8 md:p-10 border border-[#E8E2D2] shadow-xl rounded-sm">
               <span className="text-[#C2A878] text-[9px] tracking-[0.3em] uppercase font-bold block mb-3">
-                Immediate Execution
+                A Small Next Step
               </span>
               <h3 className="font-serif text-2xl text-[#0a1118] mb-4">
-                4-Week Tactical Roadmap
+                Explore with curiosity
               </h3>
               <p className="text-gray-600 text-xs leading-relaxed mb-6">
-                Your personalized execution milestone plan has been mapped out based on your target vector.
+                Choose one path that interests you. Try a beginner project, look for a class, or talk with a teacher or someone who does that work.
               </p>
-              <a 
-                href="/roadmap"
-                className="w-full block text-center bg-[#0a1118] text-white py-4 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#C2A878] transition-all rounded-sm"
-              >
-                View Weekly Milestones →
-              </a>
             </div>
 
             <div className="bg-[#FBF8F1] p-6 border border-[#E8E2D2] rounded-sm text-xs text-gray-500 font-mono">
               <span className="text-[#0a1118] font-bold block mb-1">Status:</span>
-              Loaded calculated results from psychometric engine.
+              Exploratory answer alignment for {results.stream}.
             </div>
           </div>
 
@@ -464,16 +509,22 @@ export default function DashboardPage() {
                 {selectedCareer.description}
               </p>
               
-              <div className="space-y-4 mb-8 border-t border-[#E8E2D2] pt-6">
-                <div>
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/50">India Industry Compensation Benchmark</span>
-                  <span className="block text-[#0a1118] font-bold text-sm mt-1">{selectedCareer.salary}</span>
+              {(selectedCareer.salary || selectedCareer.degree) && (
+                <div className="space-y-4 mb-8 border-t border-[#E8E2D2] pt-6">
+                  {selectedCareer.salary && (
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/50">India Industry Compensation Benchmark</span>
+                      <span className="block text-[#0a1118] font-bold text-sm mt-1">{selectedCareer.salary}</span>
+                    </div>
+                  )}
+                  {selectedCareer.degree && (
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/50">Typical Indian Degree & Certification Route</span>
+                      <span className="block text-[#0a1118] font-medium text-xs mt-1">{selectedCareer.degree}</span>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#0a1118]/50">Typical Indian Degree & Certification Route</span>
-                  <span className="block text-[#0a1118] font-medium text-xs mt-1">{selectedCareer.degree}</span>
-                </div>
-              </div>
+              )}
 
               <button 
                 onClick={() => setSelectedCareer(null)}

@@ -4,26 +4,25 @@ Live Project: https://clarity-os-delta.vercel.app
 
 Assessment Route: https://clarity-os-delta.vercel.app/assessment
 
-ClarityOS is a full stack AI career assessment platform built to replace static career quizzes with a dynamic mathematical evaluation engine. I built this to solve the problem of generic career advice by combining a rigorous scoring model with natural language generation, giving users personalized and highly accurate insights.
+ClarityOS is a career-exploration website for students in grades 11-12 and college. Each study track has a 20-question questionnaire, and the results rank career areas using signals found in the student's selected answers.
 
-Architecture and Engineering
-  1. Custom Scoring Engine
-I engineered a Weighted Sum Model (MCDA) using Python and FastAPI. Instead of basic logic trees, the algorithm dynamically processes up to 20 behavioral and academic data points, scoring them against up to 7 specialized career tracks per stream to calculate highly calibrated compatibility percentages.
+The quiz currently supports four high-school streams (PCM, PCB, Commerce, and Arts/Humanities) and seven college tracks. It is not designed for younger children yet.
 
-  2. LLM Explanation Layer
-Raw numbers are not enough for a great user experience. I integrated the Gemini API to act as a reasoning layer, translating the mathematical percentage scores into plain English career advice and actionable strength breakdowns.
+## How results work
 
-  3. Modern Frontend Implementation
-The client interface is built with Next.js, React, and TypeScript. It features a step by step assessment form and a dynamic results dashboard designed for flawless cross device responsiveness and state management.
+The FastAPI backend scores each career area against answer-language signals and returns an exploratory alignment score. These scores are heuristic, are not validated psychometric measurements, and should not be treated as predictions of ability or definitive career advice. Students should explore several options and discuss important decisions with a trusted adult or career counselor.
 
-  4. Decoupled Cloud Deployment
-The platform uses a strict separation of concerns. The REST API backend is hosted on Render, and the Next.js frontend is deployed on Vercel. I configured the automated CI/CD pipeline and resolved strict framework build bottlenecks to ensure stable production uptime.
+Gemini can provide a plain-language explanation of the leading areas. If that service is unavailable, the assessment still returns its calculated results with a fallback explanation.
 
-Tech Stack
-  - Frontend: Next.js, React, TypeScript, Tailwind CSS
+## Checks
 
-  - Backend: Python, FastAPI
+- Backend: from `backend`, run `python -m unittest -v test_quiz`.
+- Frontend: from `frontend`, run `npx tsc --noEmit` and `npm run build`.
 
-  - AI Integration: Gemini API
+## Tech stack
 
-  - Deployment: Vercel, Render, Git
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Backend: Python, FastAPI
+- Optional explanation service: Gemini API
+
+- Deployment: Vercel (frontend), Render (backend)

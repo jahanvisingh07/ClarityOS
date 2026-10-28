@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { isQuizResults } from '@/lib/quiz';
 
 export default function AssessmentPage() {
+  const router = useRouter();
   const [stage, setStage] = useState('level');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedStream, setSelectedStream] = useState('');
@@ -10,6 +14,23 @@ export default function AssessmentPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
+
+  const selectLevel = (level: string) => {
+    setSelectedLevel(level);
+    setSelectedStream('');
+    setCurrentStep(1);
+    setAnswers({});
+    setValidationError('');
+    setStage('identity');
+  };
+
+  const startQuiz = (stream: string) => {
+    setSelectedStream(stream);
+    setCurrentStep(1);
+    setAnswers({});
+    setValidationError('');
+    setStage('quiz');
+  };
 
   // Arrays (PCB, PCM, Commerce, Arts, Med, Tech, Eng, Business, Arts, Law, Creative)
   const pcbQuestions = [
@@ -278,23 +299,20 @@ export default function AssessmentPage() {
   if (selectedStream === 'College - Creative Arts, Architecture & Design') currentQuestions = collegeCreativeQuestions;
 
   const handleSelectOption = (qId: number, val: string) => {
-    setValidationError('');
-    setAnswers(prev => {
-      if (qId === 16 && selectedLevel === 'High School') {
-        const currentSelections = prev[qId] ? String(prev[qId]).split(', ') : [];
-        let newSelections;
-        if (currentSelections.includes(val)) {
-          newSelections = currentSelections.filter(item => item !== val);
-        } else if (currentSelections.length < 3) {
-          newSelections = [...currentSelections, val];
-        } else {
-          return prev;
-        }
-        return { ...prev, [qId]: newSelections.join(', ') };
-      } else {
-        return { ...prev, [qId]: val };
+    if (qId === 16 && selectedLevel === 'High School') {
+      const currentSelections = answers[qId] ? String(answers[qId]).split(', ') : [];
+      if (!currentSelections.includes(val) && currentSelections.length >= 3) {
+        setValidationError('Choose no more than three priorities.');
+        return;
       }
-    });
+      const newSelections = currentSelections.includes(val)
+        ? currentSelections.filter(item => item !== val)
+        : [...currentSelections, val];
+      setAnswers(prev => ({ ...prev, [qId]: newSelections.join(', ') }));
+    } else {
+      setAnswers(prev => ({ ...prev, [qId]: val }));
+    }
+    setValidationError('');
   };
 
   const handleNextStep = async () => {
@@ -308,31 +326,39 @@ export default function AssessmentPage() {
       return;
     }
 
+    setValidationError('');
+
     if (currentStep < 5) {
       setCurrentStep(prev => prev + 1);
     } else {
       setIsSubmitting(true);
       try {
-        const answersAsNumbers = Object.keys(answers).reduce((acc, key) => {
-          acc[parseInt(key)] = answers[key];
-          return acc;
-        }, {} as Record<number, string>);
-
         const response = await fetch('https://clarityos-backend.onrender.com/analyze-quiz', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             stream: selectedStream,
-            answers: answersAsNumbers
+            answers
           }),
         });
-        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(`Assessment request failed (${response.status}).`);
+        }
+
+        const data: unknown = await response.json();
+        if (!isQuizResults(data)) {
+          throw new Error('The assessment service returned an invalid result.');
+        }
+
         sessionStorage.setItem('clarity_backend_results', JSON.stringify(data));
         sessionStorage.setItem('clarity_quiz_stream', selectedStream);
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       } catch (error) {
         console.error("Backend error:", error);
-        window.location.href = '/dashboard';
+        setValidationError(
+          "We couldn't load your results. Check your connection and try again; your answers are still here."
+        );
+        setIsSubmitting(false);
       }
     }
   };
@@ -364,9 +390,9 @@ export default function AssessmentPage() {
   return (
     <main className="min-h-screen w-full relative bg-[#EFE6D5] text-[#0a1118] selection:bg-[#B89B72] selection:text-white flex flex-col font-sans">
       <nav className="relative z-50 w-full max-w-[1400px] mx-auto px-8 md:px-16 flex justify-between items-center py-8">
-        <a href="/" className="font-serif text-2xl tracking-[0.15em] text-[#0a1118] uppercase font-bold">
+        <Link href="/" className="font-serif text-2xl tracking-[0.15em] text-[#0a1118] uppercase font-bold">
           Clarity<span className="italic text-[#C2A878] font-light">OS</span>
-        </a>
+        </Link>
       </nav>
 
       <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-12">
@@ -381,13 +407,13 @@ export default function AssessmentPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <button 
-                  onClick={() => { setSelectedLevel('High School'); setStage('identity'); }}
+                  onClick={() => selectLevel('High School')}
                   className="p-8 border-2 border-[#E8E2D2] hover:border-[#C2A878] bg-[#FBF8F1] text-center transition-all cursor-pointer font-serif text-xl"
                 >
                   High School (11th/12th)
                 </button>
                 <button 
-                  onClick={() => { setSelectedLevel('College'); setStage('identity'); }}
+                  onClick={() => selectLevel('College')}
                   className="p-8 border-2 border-[#E8E2D2] hover:border-[#C2A878] bg-[#FBF8F1] text-center transition-all cursor-pointer font-serif text-xl"
                 >
                   Current College Student
@@ -411,7 +437,7 @@ export default function AssessmentPage() {
                   {['Science (PCM)', 'Science (PCB)', 'Commerce', 'Arts / Humanities'].map((stream, idx) => (
                     <button 
                       key={idx}
-                      onClick={() => { setSelectedStream(stream); setStage('quiz'); }}
+                      onClick={() => startQuiz(stream)}
                       className="p-6 border-2 border-[#E8E2D2] hover:border-[#C2A878] bg-[#FBF8F1] text-left transition-all cursor-pointer font-serif text-lg"
                     >
                       {stream}
@@ -433,7 +459,7 @@ export default function AssessmentPage() {
                   ].map((stream, idx) => (
                     <button 
                       key={idx}
-                      onClick={() => { setSelectedStream(stream); setStage('quiz'); }}
+                      onClick={() => startQuiz(stream)}
                       className="p-6 border-2 border-[#E8E2D2] hover:border-[#C2A878] bg-[#FBF8F1] text-left transition-all cursor-pointer font-serif text-base"
                     >
                       {stream.replace('College - ', '')}
@@ -462,7 +488,7 @@ export default function AssessmentPage() {
               </div>
 
               {validationError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
+                <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
                   {validationError}
                 </div>
               )}
@@ -482,6 +508,8 @@ export default function AssessmentPage() {
                           return (
                             <button
                               key={i}
+                              type="button"
+                              aria-pressed={isSelected}
                               onClick={() => handleSelectOption(q.id, opt)}
                               className={`p-3 text-left text-xs transition-all border cursor-pointer font-sans ${isSelected ? 'bg-[#0a1118] text-white font-bold shadow-md' : 'bg-[#FBF8F1] text-gray-800 border-[#E8E2D2] hover:border-[#C2A878]'}`}
                             >
